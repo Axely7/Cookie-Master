@@ -1,21 +1,48 @@
-import React, { ChangeEvent, useState } from 'react'
-import { Layout } from '../components/layouts/Layout'
-import { Card, CardContent, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import React, { ChangeEvent, FC, useEffect, useState } from 'react';
+import { GetServerSideProps } from 'next';
+import { Layout } from '../components/layouts/Layout';
+import axios from 'axios';
+import { Card, CardContent, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Button } from '@mui/material';
+import Cookies from 'js-cookie';  
 
-const ThemeChangerPage = () => {
+interface Props {
+  theme: string;
+}
 
-  const [currentTheme, setCurrentTheme] = useState('light');
+
+
+const ThemeChangerPage: FC<Props> = ( { theme } ) => {
+
+
+  const [currentTheme, setCurrentTheme] = useState(theme);
 
   const onThemeChange = ( event: ChangeEvent<HTMLInputElement> ) => {
 
     const selectedTheme = event.target.value;
 
-    console.log(selectedTheme)
-
     setCurrentTheme( selectedTheme )
 
+    localStorage.setItem('tema', selectedTheme);
+    Cookies.set( 'theme', selectedTheme );
+   
   }
 
+  useEffect(() => {
+    
+    console.log('LocalStorage:', localStorage.getItem('tema'));
+    console.log( 'Cookies:', Cookies.get('theme') );
+
+  }, [])
+
+  const onClick = async () => {
+
+    const { data } = await axios.get('/api/hello')
+
+    console.log({ data })
+  }
+
+
+  
 
   return (
     <Layout>
@@ -32,10 +59,36 @@ const ThemeChangerPage = () => {
                 <FormControlLabel value='custom' control={ <Radio /> } label="Custom"/>
               </RadioGroup>
             </FormControl>
+            <Button onClick={ onClick }>
+              Solicitud
+            </Button>
+
           </CardContent>
         </Card>
     </Layout>
   )
 }
+
+
+// You should use getServerSideProps when:
+// - Only if you need to pre-render a page whose data must be fetched at request time
+
+
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  
+  const { theme = 'light', name = 'No name' } = req.cookies;
+
+  const validThemes = ['light', 'dark', 'custom']
+
+  return {
+    props: {
+      theme: validThemes.includes(theme) ? theme : 'dark',
+      name,
+    }
+  }
+}
+
+
+
 
 export default ThemeChangerPage
